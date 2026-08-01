@@ -32,7 +32,7 @@ export function AppNav() {
               <Wrench className="size-4" aria-hidden="true" />
             </span>
             <span className="font-display text-base font-bold tracking-tight">
-              Prestá
+              MaoTools
             </span>
           </Link>
 
