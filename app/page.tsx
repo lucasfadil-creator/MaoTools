@@ -1,47 +1,92 @@
+'use client'
+
+import { useState } from 'react'
+import { AppHeader } from '@/components/app-header'
+import { InicioPaso } from '@/components/pasos/inicio-paso'
+import { DiagnosticoPaso } from '@/components/pasos/diagnostico-paso'
+import { ResultadoPaso } from '@/components/pasos/resultado-paso'
+import { BusquedaPaso } from '@/components/pasos/busqueda-paso'
+import { ReservaPaso } from '@/components/pasos/reserva-paso'
+import { CheckinPaso } from '@/components/pasos/checkin-paso'
+import { GuiaPaso } from '@/components/pasos/guia-paso'
+import { CheckoutPaso, type ResultadoCheckout } from '@/components/pasos/checkout-paso'
+import { CierrePaso } from '@/components/pasos/cierre-paso'
+import { PASOS, type Paso, type Proveedor } from '@/lib/data'
+
 export default function Page() {
+  const [paso, setPaso] = useState<Paso>('inicio')
+  const [maxIndice, setMaxIndice] = useState(0)
+  const [respuestas, setRespuestas] = useState<Record<string, string>>({})
+  const [proveedor, setProveedor] = useState<Proveedor | null>(null)
+  const [resultado, setResultado] = useState<ResultadoCheckout>('sin-novedades')
+
+  function ir(destino: Paso) {
+    const idx = PASOS.findIndex((p) => p.id === destino)
+    setMaxIndice((m) => Math.max(m, idx))
+    setPaso(destino)
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function reiniciar() {
+    setRespuestas({})
+    setProveedor(null)
+    setResultado('sin-novedades')
+    setMaxIndice(0)
+    setPaso('inicio')
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
+  }
+
   return (
-    <main
-      style={{
-        colorScheme: 'light dark',
-        position: 'relative',
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'light-dark(#fff, #000)',
-        color: 'light-dark(#000, #fff)',
-      }}
-    >
-      <svg
-        aria-hidden="true"
-        style={{ width: 80, height: 80 }}
-        width={80}
-        height={80}
-        fill="none"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-        stroke="currentColor"
-        strokeWidth="0.5"
-      >
-        <path
-          d="M14.2 14.2H17V6.9375C17 4.76288 15.2371 3 13.0625 3H5.8V5.8M14.2 14.2V7.79063L7.79062 14.2H14.2ZM14.2 14.2V17H6.9375C4.76288 17 3 15.2371 3 13.0625V5.8H5.8M5.8 5.8V12.2313L12.2313 5.8H5.8Z"
-          strokeLinejoin="round"
+    <div className="min-h-screen bg-background">
+      <AppHeader paso={paso} onIr={ir} onReiniciar={reiniciar} maxIndice={maxIndice} />
+
+      {paso === 'inicio' && <InicioPaso onEmpezar={() => ir('diagnostico')} />}
+
+      {paso === 'diagnostico' && (
+        <DiagnosticoPaso
+          onContinuar={(r) => {
+            setRespuestas(r)
+            ir('resultado')
+          }}
         />
-      </svg>
-      <p
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: 'calc(50% + 56px)',
-          transform: 'translateX(-50%)',
-          whiteSpace: 'nowrap',
-          fontSize: '14px',
-          fontWeight: 500,
-          color: 'light-dark(#71717a, #a1a1aa)',
-        }}
-      >
-        Your v0 generation will show here.
-      </p>
-    </main>
+      )}
+
+      {paso === 'resultado' && (
+        <ResultadoPaso respuestas={respuestas} onBuscar={() => ir('busqueda')} />
+      )}
+
+      {paso === 'busqueda' && (
+        <BusquedaPaso
+          onElegir={(p) => {
+            setProveedor(p)
+            ir('reserva')
+          }}
+        />
+      )}
+
+      {paso === 'reserva' && proveedor && (
+        <ReservaPaso proveedor={proveedor} onConfirmar={() => ir('checkin')} />
+      )}
+
+      {paso === 'checkin' && proveedor && (
+        <CheckinPaso proveedor={proveedor} onFirmado={() => ir('guia')} />
+      )}
+
+      {paso === 'guia' && <GuiaPaso onDevolver={() => ir('checkout')} />}
+
+      {paso === 'checkout' && proveedor && (
+        <CheckoutPaso
+          proveedor={proveedor}
+          onCerrar={(r) => {
+            setResultado(r)
+            ir('cierre')
+          }}
+        />
+      )}
+
+      {paso === 'cierre' && proveedor && (
+        <CierrePaso proveedor={proveedor} resultado={resultado} onReiniciar={reiniciar} />
+      )}
+    </div>
   )
 }
