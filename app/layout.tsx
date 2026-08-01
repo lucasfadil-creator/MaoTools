@@ -1,6 +1,9 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
+import { AppNav } from '@/components/app-nav'
+import { Toaster } from '@/components/ui/sonner'
+import { StoreProvider } from '@/lib/store'
 import './globals.css'
 
 const inter = Inter({
@@ -58,7 +61,13 @@ export default function RootLayout({
       className={`bg-background ${inter.variable} ${jakarta.variable}`}
     >
       <body className="font-sans antialiased">
-        {children}
+        <StoreProvider>
+          <AppNav />
+          <main className="mx-auto w-full max-w-6xl px-4 pb-24 pt-6 md:pb-12">
+            {children}
+          </main>
+          <Toaster position="top-center" />
+        </StoreProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

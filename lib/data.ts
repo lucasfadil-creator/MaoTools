@@ -1,25 +1,7 @@
-export type Paso =
-  | 'inicio'
-  | 'diagnostico'
-  | 'resultado'
-  | 'busqueda'
-  | 'reserva'
-  | 'checkin'
-  | 'guia'
-  | 'checkout'
-  | 'cierre'
-
-export const PASOS: { id: Paso; label: string; corto: string }[] = [
-  { id: 'inicio', label: 'Inicio', corto: 'Inicio' },
-  { id: 'diagnostico', label: 'Diagnóstico IA', corto: 'Diagnóstico' },
-  { id: 'resultado', label: 'Qué necesitás', corto: 'Necesidad' },
-  { id: 'busqueda', label: 'Disponibilidad cercana', corto: 'Buscar' },
-  { id: 'reserva', label: 'Reserva y garantía', corto: 'Reserva' },
-  { id: 'checkin', label: 'Acta de entrega', corto: 'Entrega' },
-  { id: 'guia', label: 'Guía asistida', corto: 'Guía' },
-  { id: 'checkout', label: 'Acta de devolución', corto: 'Devolución' },
-  { id: 'cierre', label: 'Cierre', corto: 'Cierre' },
-]
+/* ============================================================================
+   Dominio del marketplace de alquiler de herramientas.
+   Un mismo usuario puede alquilar (locatario) y prestar (prestamista).
+   ========================================================================== */
 
 export function fmt(n: number) {
   return new Intl.NumberFormat('es-AR', {
@@ -29,273 +11,563 @@ export function fmt(n: number) {
   }).format(n)
 }
 
-/* ---------------------------------- IA ---------------------------------- */
-
-export type Pregunta = {
-  id: string
-  texto: string
-  ayuda: string
-  opciones: string[]
+export function distancia(m: number) {
+  return m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`
 }
 
-export const PREGUNTAS_IA: Pregunta[] = [
-  {
-    id: 'peso',
-    texto: '¿Cuánto pesa aproximadamente el cuadro?',
-    ayuda: 'Define el tipo de fijación y la cantidad de anclajes.',
-    opciones: ['Menos de 5 kg', 'Entre 5 y 15 kg', 'Más de 15 kg'],
-  },
-  {
-    id: 'sonido',
-    texto: '¿Cómo suena la pared al golpearla con los nudillos?',
-    ayuda: 'Distingue ladrillo macizo de ladrillo hueco o placa de yeso.',
-    opciones: ['Suena hueca', 'Suena maciza', 'No estoy seguro'],
-  },
-]
-
-export type ItemNecesario = {
-  nombre: string
-  detalle: string
-  tipo: 'herramienta' | 'insumo' | 'epp'
-  alquilable: boolean
-  precioDia?: number
-  precioCompra?: number
+export function hoyMas(dias: number) {
+  const d = new Date()
+  d.setDate(d.getDate() + dias)
+  return d.toISOString().slice(0, 10)
 }
 
-export const DIAGNOSTICO = {
-  material: 'Ladrillo hueco con revoque fino',
-  confianza: 0.87,
-  tarea: 'Fijar un cuadro de peso medio en pared interior',
-  dificultad: 'Baja',
-  tiempo: '25 a 40 minutos',
-  riesgo: 'bajo' as const,
-  items: [
-    {
-      nombre: 'Taladro percutor',
-      detalle: 'Necesario para perforar revoque y ladrillo hueco',
-      tipo: 'herramienta',
-      alquilable: true,
-      precioDia: 6500,
-      precioCompra: 98000,
-    },
-    {
-      nombre: 'Nivel de burbuja',
-      detalle: '40 cm o superior, para alinear los dos anclajes',
-      tipo: 'herramienta',
-      alquilable: true,
-      precioDia: 900,
-      precioCompra: 12000,
-    },
-    {
-      nombre: 'Mecha de widia 6 mm',
-      detalle: 'Punta de widia, apta para mampostería',
-      tipo: 'insumo',
-      alquilable: false,
-      precioCompra: 4200,
-    },
-    {
-      nombre: 'Tarugos para hueco 6 mm x2',
-      detalle: 'Tipo mariposa o de expansión para ladrillo hueco',
-      tipo: 'insumo',
-      alquilable: false,
-      precioCompra: 1800,
-    },
-    {
-      nombre: 'Tornillos 4 x 40 mm x2',
-      detalle: 'Cabeza plana, acordes al tarugo elegido',
-      tipo: 'insumo',
-      alquilable: false,
-      precioCompra: 900,
-    },
-    {
-      nombre: 'Antiparras de seguridad',
-      detalle: 'Obligatorias: la percusión desprende partículas',
-      tipo: 'epp',
-      alquilable: false,
-      precioCompra: 5500,
-    },
-    {
-      nombre: 'Barbijo para polvo',
-      detalle: 'Recomendado en ambientes cerrados',
-      tipo: 'epp',
-      alquilable: false,
-      precioCompra: 1200,
-    },
-  ] as ItemNecesario[],
+export function fechaCorta(iso: string) {
+  const [a, m, d] = iso.split('-').map(Number)
+  return new Date(a, m - 1, d).toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: 'short',
+  })
 }
 
-/* ------------------------------ Proveedores ------------------------------ */
+export function diasEntre(desde: string, hasta: string) {
+  const a = new Date(desde).getTime()
+  const b = new Date(hasta).getTime()
+  return Math.max(1, Math.round((b - a) / 86400000) + 1)
+}
 
-export type Proveedor = {
+/* --------------------------------- Usuarios ------------------------------- */
+
+export type Usuario = {
   id: string
   nombre: string
-  tipo: 'P2P' | 'B2P'
-  nivel: string
+  tipo: 'Particular' | 'Comercio'
+  nivel: 'Nuevo' | 'Confiable' | 'Súper Prestamista' | 'Comercio verificado'
   rating: number
   operaciones: number
-  distanciaM: number
+  verificado: boolean
+  respuesta: string
+  barrio: string
+}
+
+export const YO = 'yo'
+
+export const USUARIOS: Record<string, Usuario> = {
+  yo: {
+    id: 'yo',
+    nombre: 'Julia Medina',
+    tipo: 'Particular',
+    nivel: 'Confiable',
+    rating: 4.8,
+    operaciones: 12,
+    verificado: true,
+    respuesta: 'Respondés en ~20 min',
+    barrio: 'Villa Crespo',
+  },
+  marcos: {
+    id: 'marcos',
+    nombre: 'Marcos Gil',
+    tipo: 'Particular',
+    nivel: 'Súper Prestamista',
+    rating: 4.9,
+    operaciones: 37,
+    verificado: true,
+    respuesta: 'Responde en ~12 min',
+    barrio: 'Villa Crespo',
+  },
+  donluis: {
+    id: 'donluis',
+    nombre: 'Ferretería Don Luis',
+    tipo: 'Comercio',
+    nivel: 'Comercio verificado',
+    rating: 4.7,
+    operaciones: 214,
+    verificado: true,
+    respuesta: 'Reserva instantánea',
+    barrio: 'Almagro',
+  },
+  sofia: {
+    id: 'sofia',
+    nombre: 'Sofía Ramos',
+    tipo: 'Particular',
+    nivel: 'Confiable',
+    rating: 4.5,
+    operaciones: 9,
+    verificado: true,
+    respuesta: 'Responde en ~3 h',
+    barrio: 'Chacarita',
+  },
+  nicolas: {
+    id: 'nicolas',
+    nombre: 'Nicolás Ferrer',
+    tipo: 'Particular',
+    nivel: 'Nuevo',
+    rating: 0,
+    operaciones: 0,
+    verificado: true,
+    respuesta: 'Responde en ~1 h',
+    barrio: 'Paternal',
+  },
+  paula: {
+    id: 'paula',
+    nombre: 'Paula Sosa',
+    tipo: 'Particular',
+    nivel: 'Confiable',
+    rating: 4.6,
+    operaciones: 15,
+    verificado: true,
+    respuesta: 'Responde en ~40 min',
+    barrio: 'Villa Crespo',
+  },
+  obrasur: {
+    id: 'obrasur',
+    nombre: 'Corralón Obra Sur',
+    tipo: 'Comercio',
+    nivel: 'Comercio verificado',
+    rating: 4.4,
+    operaciones: 88,
+    verificado: true,
+    respuesta: 'Reserva instantánea',
+    barrio: 'Colegiales',
+  },
+}
+
+/* ------------------------------- Herramientas ----------------------------- */
+
+export const CATEGORIAS = [
+  'Perforación',
+  'Corte',
+  'Lijado',
+  'Cerámica',
+  'Limpieza',
+  'Altura',
+  'Soldadura',
+  'Demolición',
+] as const
+
+export type Categoria = (typeof CATEGORIAS)[number]
+
+export type Estado = 'Como nuevo' | 'Muy bueno' | 'Bueno'
+
+export type Herramienta = {
+  id: string
+  nombre: string
+  categoria: Categoria
+  descripcion: string
+  imagen: string
+  duenoId: string
   precioDia: number
   garantia: number
+  estado: Estado
+  distanciaM: number
   entregaInmediata: boolean
   factura: boolean
-  herramienta: string
-  imagen: string
-  estado: string
   incluye: string[]
-  respuesta: string
-  // posición relativa (0-100) dentro del mapa de zona
+  eppRequerido: string[]
+  publicada: boolean
+  /* posición relativa 0-100 dentro del mapa de zona */
   x: number
   y: number
 }
 
-export const PROVEEDORES: Proveedor[] = [
+export const HERRAMIENTAS: Herramienta[] = [
   {
-    id: 'marcos',
-    nombre: 'Marcos G.',
-    tipo: 'P2P',
-    nivel: 'Súper Prestamista',
-    rating: 4.9,
-    operaciones: 37,
-    distanciaM: 400,
+    id: 'h-taladro-marcos',
+    nombre: 'Taladro percutor 750 W',
+    categoria: 'Perforación',
+    descripcion:
+      'Percutor con selector de dos velocidades. Ideal para ladrillo hueco, macizo y madera. Lo uso poco, está muy cuidado.',
+    imagen: '/tools/taladro-percutor.png',
+    duenoId: 'marcos',
     precioDia: 6500,
     garantia: 18000,
+    estado: 'Muy bueno',
+    distanciaM: 400,
     entregaInmediata: true,
     factura: false,
-    herramienta: 'Taladro percutor 750 W',
-    imagen: '/tools/taladro-percutor.png',
-    estado: 'Muy bueno',
-    incluye: ['Maletín', 'Mecha 6 mm', 'Manual'],
-    respuesta: 'Responde en ~12 min',
+    incluye: ['Maletín rígido', 'Mecha widia 6 mm', 'Manual'],
+    eppRequerido: ['Antiparras', 'Barbijo para polvo'],
+    publicada: true,
     x: 38,
     y: 34,
   },
   {
-    id: 'donluis',
-    nombre: 'Ferretería Don Luis',
-    tipo: 'B2P',
-    nivel: 'Comercio verificado',
-    rating: 4.7,
-    operaciones: 214,
-    distanciaM: 1200,
+    id: 'h-taladro-donluis',
+    nombre: 'Taladro percutor 900 W profesional',
+    categoria: 'Perforación',
+    descripcion:
+      'Equipo de línea profesional del comercio. Se entrega revisado, con factura y reemplazo inmediato ante falla.',
+    imagen: '/tools/taladro-percutor.png',
+    duenoId: 'donluis',
     precioDia: 8200,
     garantia: 22000,
+    estado: 'Como nuevo',
+    distanciaM: 1200,
     entregaInmediata: true,
     factura: true,
-    herramienta: 'Taladro percutor 900 W',
-    imagen: '/tools/amoladora.png',
-    estado: 'Como nuevo',
-    incluye: ['Juego de mechas', 'Factura A/B', 'Reemplazo inmediato'],
-    respuesta: 'Reserva instantánea',
+    incluye: ['Juego de 5 mechas', 'Empuñadura lateral', 'Factura A/B'],
+    eppRequerido: ['Antiparras', 'Barbijo para polvo'],
+    publicada: true,
     x: 70,
     y: 62,
   },
   {
-    id: 'sofia',
-    nombre: 'Sofía R.',
-    tipo: 'P2P',
-    nivel: 'Confiable',
-    rating: 4.5,
-    operaciones: 9,
-    distanciaM: 900,
+    id: 'h-amoladora-sofia',
+    nombre: 'Amoladora angular 4½"',
+    categoria: 'Corte',
+    descripcion:
+      'Para cortar hierro, cerámico y desbastar. Incluye dos discos nuevos. Requiere protección facial obligatoria.',
+    imagen: '/tools/amoladora.png',
+    duenoId: 'sofia',
     precioDia: 5200,
     garantia: 16000,
+    estado: 'Bueno',
+    distanciaM: 900,
     entregaInmediata: false,
     factura: false,
-    herramienta: 'Taladro percutor 600 W',
-    imagen: '/tools/lijadora-orbital.png',
-    estado: 'Bueno',
-    incluye: ['Mecha 5 mm'],
-    respuesta: 'Responde en ~3 h',
+    incluye: ['Disco de corte', 'Disco de desbaste', 'Protector'],
+    eppRequerido: ['Máscara facial', 'Guantes', 'Protección auditiva'],
+    publicada: true,
     x: 24,
     y: 68,
   },
+  {
+    id: 'h-lijadora-yo',
+    nombre: 'Lijadora orbital 300 W',
+    categoria: 'Lijado',
+    descripcion:
+      'La compré para restaurar una mesa y quedó sin uso. Suave, con aspiración de polvo integrada.',
+    imagen: '/tools/lijadora-orbital.png',
+    duenoId: 'yo',
+    precioDia: 4200,
+    garantia: 12000,
+    estado: 'Como nuevo',
+    distanciaM: 0,
+    entregaInmediata: true,
+    factura: false,
+    incluye: ['Bolsa de aspiración', '5 hojas de lija grano 120'],
+    eppRequerido: ['Barbijo para polvo', 'Antiparras'],
+    publicada: true,
+    x: 50,
+    y: 48,
+  },
+  {
+    id: 'h-escalera-yo',
+    nombre: 'Escalera extensible de aluminio 5 m',
+    categoria: 'Altura',
+    descripcion:
+      'Escalera liviana con zapatas antideslizantes. La retiran y devuelven por el garage del edificio.',
+    imagen: '/tools/escalera.png',
+    duenoId: 'yo',
+    precioDia: 3800,
+    garantia: 15000,
+    estado: 'Muy bueno',
+    distanciaM: 0,
+    entregaInmediata: false,
+    factura: false,
+    incluye: ['Zapatas de goma', 'Correa de traslado'],
+    eppRequerido: ['Calzado cerrado'],
+    publicada: true,
+    x: 52,
+    y: 44,
+  },
+  {
+    id: 'h-sierra-marcos',
+    nombre: 'Sierra circular 1400 W',
+    categoria: 'Corte',
+    descripcion:
+      'Para cortes rectos en madera y placas. Disco nuevo de 24 dientes. Pido experiencia previa de uso.',
+    imagen: '/tools/sierra-circular.png',
+    duenoId: 'marcos',
+    precioDia: 7400,
+    garantia: 24000,
+    estado: 'Muy bueno',
+    distanciaM: 400,
+    entregaInmediata: true,
+    factura: false,
+    incluye: ['Disco 24 dientes', 'Guía paralela', 'Llave'],
+    eppRequerido: ['Antiparras', 'Protección auditiva', 'Guantes'],
+    publicada: true,
+    x: 36,
+    y: 30,
+  },
+  {
+    id: 'h-hidro-donluis',
+    nombre: 'Hidrolavadora 130 bar',
+    categoria: 'Limpieza',
+    descripcion:
+      'Para patios, veredas, rejas y frentes. Se entrega con manguera de 8 m y dos lanzas intercambiables.',
+    imagen: '/tools/hidrolavadora.png',
+    duenoId: 'donluis',
+    precioDia: 9600,
+    garantia: 28000,
+    estado: 'Como nuevo',
+    distanciaM: 1200,
+    entregaInmediata: true,
+    factura: true,
+    incluye: ['Manguera 8 m', 'Lanza turbo', 'Lanza abanico'],
+    eppRequerido: ['Calzado cerrado', 'Antiparras'],
+    publicada: true,
+    x: 72,
+    y: 58,
+  },
+  {
+    id: 'h-soldadora-obrasur',
+    nombre: 'Soldadora inverter 200 A',
+    categoria: 'Soldadura',
+    descripcion:
+      'Equipo liviano para electrodo revestido. Se alquila únicamente a usuarios con experiencia acreditada.',
+    imagen: '/tools/soldadora.png',
+    duenoId: 'obrasur',
+    precioDia: 11800,
+    garantia: 40000,
+    estado: 'Muy bueno',
+    distanciaM: 2100,
+    entregaInmediata: false,
+    factura: true,
+    incluye: ['Porta electrodo', 'Pinza de masa', 'Máscara fotosensible'],
+    eppRequerido: ['Máscara de soldar', 'Guantes de cuero', 'Delantal'],
+    publicada: true,
+    x: 84,
+    y: 26,
+  },
+  {
+    id: 'h-ceramica-paula',
+    nombre: 'Cortadora de cerámica manual 60 cm',
+    categoria: 'Cerámica',
+    descripcion:
+      'Corte limpio en porcelanato y cerámico hasta 60 cm. No hace ruido ni polvo, ideal para departamentos.',
+    imagen: '/tools/cortadora-ceramica.png',
+    duenoId: 'paula',
+    precioDia: 4800,
+    garantia: 14000,
+    estado: 'Bueno',
+    distanciaM: 650,
+    entregaInmediata: true,
+    factura: false,
+    incluye: ['Rueda de widia de repuesto'],
+    eppRequerido: ['Guantes'],
+    publicada: true,
+    x: 46,
+    y: 72,
+  },
+  {
+    id: 'h-demoledor-obrasur',
+    nombre: 'Martillo demoledor 1500 W',
+    categoria: 'Demolición',
+    descripcion:
+      'Para romper contrapisos y revoques. Pesado: se recomienda traslado en vehículo y uso de a dos personas.',
+    imagen: '/tools/martillo-demoledor.png',
+    duenoId: 'obrasur',
+    precioDia: 15400,
+    garantia: 55000,
+    estado: 'Muy bueno',
+    distanciaM: 2100,
+    entregaInmediata: false,
+    factura: true,
+    incluye: ['Cincel plano', 'Puntero', 'Grasa lubricante'],
+    eppRequerido: [
+      'Protección auditiva',
+      'Antiparras',
+      'Guantes antivibración',
+      'Calzado de seguridad',
+    ],
+    publicada: true,
+    x: 86,
+    y: 40,
+  },
 ]
 
-/* --------------------------------- Actas --------------------------------- */
+/* -------------------------------- Operaciones ------------------------------ */
 
-export type ItemChecklist = {
-  id: string
-  label: string
-  detalle: string
+export type EstadoOperacion =
+  | 'solicitada'
+  | 'rechazada'
+  | 'aceptada'
+  | 'en_curso'
+  | 'finalizada'
+  | 'cancelada'
+
+export type Acta = {
+  fecha: string
+  items: string[]
+  nota: string
+  firmaDueno: boolean
+  firmaLocatario: boolean
+  novedad: boolean
 }
 
-export const CHECKLIST_TALADRO: ItemChecklist[] = [
+export type Operacion = {
+  id: string
+  herramientaId: string
+  duenoId: string
+  locatarioId: string
+  desde: string
+  hasta: string
+  dias: number
+  precioDia: number
+  garantia: number
+  fee: number
+  total: number
+  estado: EstadoOperacion
+  mensaje: string
+  creada: string
+  entrega?: Acta
+  devolucion?: Acta
+  calificacion?: number
+}
+
+export const FEE = 0.08
+
+export function calcularCostos(precioDia: number, dias: number) {
+  const alquiler = precioDia * dias
+  const fee = Math.round(alquiler * FEE)
+  return { alquiler, fee, total: alquiler + fee }
+}
+
+export const OPERACIONES_INICIALES: Operacion[] = [
+  {
+    id: 'op-1',
+    herramientaId: 'h-taladro-donluis',
+    duenoId: 'donluis',
+    locatarioId: 'yo',
+    desde: hoyMas(2),
+    hasta: hoyMas(3),
+    dias: 2,
+    precioDia: 8200,
+    garantia: 22000,
+    fee: 1312,
+    total: 17712,
+    estado: 'solicitada',
+    mensaje: 'Necesito colgar dos cuadros pesados en pared de ladrillo hueco.',
+    creada: hoyMas(0),
+  },
+  {
+    id: 'op-2',
+    herramientaId: 'h-amoladora-sofia',
+    duenoId: 'sofia',
+    locatarioId: 'yo',
+    desde: hoyMas(-1),
+    hasta: hoyMas(1),
+    dias: 3,
+    precioDia: 5200,
+    garantia: 16000,
+    fee: 1248,
+    total: 16848,
+    estado: 'en_curso',
+    mensaje: 'Corte de rejas del balcón.',
+    creada: hoyMas(-2),
+    entrega: {
+      fecha: hoyMas(-1),
+      items: ['carcasa', 'cable', 'accesorios', 'funcionamiento'],
+      nota: 'Disco de corte con desgaste leve, ya declarado por la dueña.',
+      firmaDueno: true,
+      firmaLocatario: true,
+      novedad: false,
+    },
+  },
+  {
+    id: 'op-3',
+    herramientaId: 'h-escalera-yo',
+    duenoId: 'yo',
+    locatarioId: 'nicolas',
+    desde: hoyMas(1),
+    hasta: hoyMas(1),
+    dias: 1,
+    precioDia: 3800,
+    garantia: 15000,
+    fee: 304,
+    total: 4104,
+    estado: 'solicitada',
+    mensaje: 'Es para pintar el frente de casa, la devuelvo el mismo día.',
+    creada: hoyMas(0),
+  },
+  {
+    id: 'op-4',
+    herramientaId: 'h-lijadora-yo',
+    duenoId: 'yo',
+    locatarioId: 'paula',
+    desde: hoyMas(-3),
+    hasta: hoyMas(0),
+    dias: 4,
+    precioDia: 4200,
+    garantia: 12000,
+    fee: 1344,
+    total: 18144,
+    estado: 'en_curso',
+    mensaje: 'Restauración de una cómoda antigua.',
+    creada: hoyMas(-4),
+    entrega: {
+      fecha: hoyMas(-3),
+      items: ['carcasa', 'cable', 'accesorios', 'funcionamiento'],
+      nota: '',
+      firmaDueno: true,
+      firmaLocatario: true,
+      novedad: false,
+    },
+  },
+  {
+    id: 'op-5',
+    herramientaId: 'h-lijadora-yo',
+    duenoId: 'yo',
+    locatarioId: 'marcos',
+    desde: hoyMas(-14),
+    hasta: hoyMas(-12),
+    dias: 3,
+    precioDia: 4200,
+    garantia: 12000,
+    fee: 1008,
+    total: 13608,
+    estado: 'finalizada',
+    mensaje: 'Lijado de puerta de entrada.',
+    creada: hoyMas(-16),
+    entrega: {
+      fecha: hoyMas(-14),
+      items: ['carcasa', 'cable', 'accesorios', 'funcionamiento'],
+      nota: '',
+      firmaDueno: true,
+      firmaLocatario: true,
+      novedad: false,
+    },
+    devolucion: {
+      fecha: hoyMas(-12),
+      items: ['carcasa', 'cable', 'accesorios', 'funcionamiento'],
+      nota: 'Devuelta limpia y con las lijas repuestas.',
+      firmaDueno: true,
+      firmaLocatario: true,
+      novedad: false,
+    },
+    calificacion: 5,
+  },
+]
+
+/* ---------------------------- Checklist de actas --------------------------- */
+
+export type ItemChecklist = { id: string; label: string; detalle: string }
+
+export const CHECKLIST_BASE: ItemChecklist[] = [
   {
     id: 'carcasa',
-    label: 'Carcasa sin fisuras ni golpes',
-    detalle: 'Revisar cuerpo, empuñadura y ventilaciones',
+    label: 'Cuerpo sin fisuras ni golpes',
+    detalle: 'Revisar carcasa, empuñadura y ventilaciones',
   },
   {
     id: 'cable',
-    label: 'Cable y ficha en buen estado',
-    detalle: 'Sin cortes, empalmes ni recalentamiento',
-  },
-  {
-    id: 'mandril',
-    label: 'Mandril ajusta y libera correctamente',
-    detalle: 'Probar apriete con la mecha incluida',
+    label: 'Cable, ficha o partes móviles en orden',
+    detalle: 'Sin cortes, empalmes ni juego excesivo',
   },
   {
     id: 'funcionamiento',
-    label: 'Enciende y cambia a percusión',
-    detalle: 'Probar ambas velocidades y el selector',
+    label: 'Funciona correctamente en la prueba',
+    detalle: 'Probar encendido y todas las velocidades o posiciones',
   },
   {
     id: 'accesorios',
-    label: 'Accesorios completos según publicación',
-    detalle: 'Maletín, mecha 6 mm y manual',
-  },
-]
-
-/* ---------------------------------- Guía --------------------------------- */
-
-export const GUIA_PASOS = [
-  {
-    titulo: 'Preparación y seguridad',
-    texto:
-      'Colocate las antiparras antes de enchufar la herramienta. Despejá la zona y apoyá el cuadro en el piso, no sobre muebles.',
-    aviso: 'EPP obligatorio: antiparras.',
+    label: 'Accesorios completos según la publicación',
+    detalle: 'Contrastar con el listado de "incluye"',
   },
   {
-    titulo: 'Marcar los puntos',
-    texto:
-      'Marcá los dos puntos de anclaje separados 30 cm y verificá con el nivel que estén alineados. Medí desde el piso para que el centro del cuadro quede a 1,55 m.',
-    aviso: null,
-  },
-  {
-    titulo: 'Verificar que no haya instalaciones',
-    texto:
-      'Evitá perforar en línea vertical u horizontal directa con enchufes, llaves de luz o canillas. Si hay dudas, corré el punto 15 cm al costado.',
-    aviso: 'Si sospechás que hay un caño o cable, no perfores: consultá a un matriculado.',
-  },
-  {
-    titulo: 'Perforar',
-    texto:
-      'Empezá sin percusión para romper el revoque y evitar que se desgrane. Cuando la mecha entre 5 mm, activá la percusión. Mantené el taladro perpendicular a la pared.',
-    aviso: null,
-  },
-  {
-    titulo: 'Colocar tarugos y colgar',
-    texto:
-      'Limpiá el polvo del agujero, insertá los tarugos tipo mariposa y ajustá los tornillos dejando 4 mm afuera. Colgá el cuadro y verificá con el nivel.',
-    aviso: null,
-  },
-]
-
-export const CONSULTAS_GUIA = [
-  {
-    pregunta: 'La mecha no avanza, ¿qué hago?',
-    respuesta:
-      'Casi seguro estás sin percusión o la mecha no es de widia. Verificá el selector del taladro (símbolo de martillo) y confirmá que la punta sea de widia y no de acero rápido. No fuerces: sobrecalentás la mecha y quemás el motor.',
-  },
-  {
-    pregunta: 'El agujero quedó demasiado grande',
-    respuesta:
-      'Pasá a un tarugo del diámetro siguiente (8 mm) o usá un tarugo químico. No lo rellenes con papel: la fijación no va a resistir el peso del cuadro.',
-  },
-  {
-    pregunta: 'Salió mucho polvo blanco, ¿es normal?',
-    respuesta:
-      'Sí, es el revoque. Sostené un sobre o un recipiente bajo el punto de perforación y usá barbijo si el ambiente está cerrado.',
+    id: 'limpieza',
+    label: 'Estado de limpieza aceptable',
+    detalle: 'Se documenta para evitar reclamos posteriores',
   },
 ]
