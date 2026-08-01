@@ -4,6 +4,7 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import { AppNav } from '@/components/app-nav'
 import { Toaster } from '@/components/ui/sonner'
 import { StoreProvider } from '@/lib/store'
+import 'leaflet/dist/leaflet.css'
 import './globals.css'
 
 const inter = Inter({
@@ -19,7 +20,7 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Prestá — Alquilá la herramienta, resolvé el problema',
+  title: 'MaoTools — Alquilá la herramienta, resolvé el problema',
   description:
     'Marketplace de alquiler de herramientas entre vecinos y ferreterías, con diagnóstico asistido por IA, garantía preautorizada y acta digital de estado.',
   generator: 'v0.app',

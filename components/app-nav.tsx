@@ -2,20 +2,22 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Compass, PlusCircle, Repeat2, UserRound, Wrench } from 'lucide-react'
+import { Compass, Home, Map, MessageSquare, PlusCircle, Repeat2, UserRound, Wrench } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/lib/store'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 const LINKS = [
-  { href: '/', label: 'Explorar', icon: Compass },
+  { href: '/', label: 'Inicio', icon: Home },
+  { href: '/mapa', label: 'Mapa', icon: Map },
+  { href: '/explorar', label: 'Explorar', icon: Compass },
+  { href: '/chat', label: 'Chat IA', icon: MessageSquare },
   { href: '/publicar', label: 'Publicar', icon: PlusCircle },
   { href: '/actividad', label: 'Actividad', icon: Repeat2 },
-  { href: '/perfil', label: 'Perfil', icon: UserRound },
 ]
 
 function esActivo(pathname: string, href: string) {
-  if (href === '/') return pathname === '/' || pathname.startsWith('/herramienta')
+  if (href === '/') return pathname === '/'
   return pathname.startsWith(href)
 }
 
@@ -32,7 +34,7 @@ export function AppNav() {
               <Wrench className="size-4" aria-hidden="true" />
             </span>
             <span className="font-display text-base font-bold tracking-tight">
-              Prestá
+              MaoTools
             </span>
           </Link>
 

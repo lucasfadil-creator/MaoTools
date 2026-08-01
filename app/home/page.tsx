@@ -1,5 +1,5 @@
 import { HomeView } from '@/components/home-view'
 
-export default function Page() {
+export default function HomePage() {
   return <HomeView />
 }
