@@ -4,6 +4,7 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import { AppNav } from '@/components/app-nav'
 import { Toaster } from '@/components/ui/sonner'
 import { StoreProvider } from '@/lib/store'
+import 'leaflet/dist/leaflet.css'
 import './globals.css'
 
 const inter = Inter({
