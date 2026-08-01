@@ -1,6 +1,8 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
+import { Nav } from '@/components/nav'
+import { StoreProvider } from '@/components/store'
 import './globals.css'
 
 const inter = Inter({
@@ -58,7 +60,10 @@ export default function RootLayout({
       className={`bg-background ${inter.variable} ${jakarta.variable}`}
     >
       <body className="font-sans antialiased">
-        {children}
+        <StoreProvider>
+          <Nav />
+          <main className="mx-auto w-full max-w-6xl px-4 pb-24 pt-6 md:pb-16">{children}</main>
+        </StoreProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

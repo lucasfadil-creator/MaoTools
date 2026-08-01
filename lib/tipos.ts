@@ -48,6 +48,25 @@ export const CATEGORIAS: Categoria[] = [
   'Elevación',
 ]
 
+export const ESTADOS: Herramienta['estado'][] = [
+  'Como nuevo',
+  'Muy bueno',
+  'Bueno',
+  'Con uso',
+]
+
+export const IMAGENES_SUGERIDAS = [
+  { src: '/tools/taladro-percutor.png', label: 'Taladro percutor' },
+  { src: '/tools/amoladora.png', label: 'Amoladora' },
+  { src: '/tools/lijadora-orbital.png', label: 'Lijadora orbital' },
+  { src: '/tools/caladora.png', label: 'Sierra caladora' },
+  { src: '/tools/nivel-laser.png', label: 'Nivel láser' },
+  { src: '/tools/escalera.png', label: 'Escalera' },
+  { src: '/tools/hidrolavadora.png', label: 'Hidrolavadora' },
+  { src: '/tools/atornillador.png', label: 'Atornillador' },
+  { src: '/tools/pistola-calor.png', label: 'Pistola de calor' },
+]
+
 export type EstadoSolicitud =
   | 'pendiente'
   | 'rechazada'
